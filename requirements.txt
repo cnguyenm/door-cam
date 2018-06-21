@@ -1,0 +1,4 @@
+opencv-python
+opencv-contrib-python
+face_recognition
+#visual studio 2017 fully updated
