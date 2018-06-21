@@ -106,3 +106,10 @@ venv.bak/
 
 # Pycharm
 .idea
+
+# images
+img/
+
+# important info
+config.py
+
