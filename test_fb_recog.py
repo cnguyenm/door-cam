@@ -1,7 +1,7 @@
 from pprint import pprint
 from fbrecog import FBRecog
 import time
-import config
+import config  # download separately
 
 # useful variable
 path = "img/new2.jpg"

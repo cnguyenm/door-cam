@@ -18,7 +18,6 @@ import time
 import face_recognition
 
 
-
 # desired output width, height
 OUTPUT_SIZE_WIDTH = 775
 OUTPUT_SIZE_HEIGHT = 600
@@ -39,7 +38,7 @@ def recognize_person(faceNames, fid):
 def detect_and_track_multiple_faces():
 
     # open cam device
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture("video/learn_cat.mp4")
 
     # create 2 opencv named windows
     cv2.namedWindow('base-image', cv2.WINDOW_AUTOSIZE)
@@ -177,6 +176,10 @@ def detect_and_track_multiple_faces():
                         ):
                             match_fid = fid
 
+                            # if found a match, no need to
+                            # find anymore
+                            break
+
                     # if no matched fid, then have to create a new tracker
                     if match_fid is None:
                         print("create a new tracker " + str(cur_face_id))
@@ -223,7 +226,7 @@ def detect_and_track_multiple_faces():
                 # write name ...
                 # not implemented yet
 
-            # show large result
+            # create large result
             large_result = cv2.resize(result_img,
                                       (OUTPUT_SIZE_WIDTH, OUTPUT_SIZE_HEIGHT))
 
