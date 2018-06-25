@@ -12,7 +12,7 @@ ap.add_argument("-i", "--dataset", required=True,
 ap.add_argument("-o", "--output", required=True,
                 help="path to serialized db of facial encodings")
 ap.add_argument("-d", "--detection-method", type=str,
-                default="cnn",
+                default="hog",
                 help="face detection model to use: either `hog` or `cnn`")
 args = vars(ap.parse_args())
 
@@ -49,7 +49,7 @@ for (i, imagePath) in enumerate(imagePaths):
     # detect bboxes for each face
     boxes = face_recognition.face_locations(
         rgb,
-        model=args["detection_method"] #cnn, or hog
+        model=args["detection_method"]  # cnn, or hog
     )
 
     # compute facial embedding for the face
@@ -66,7 +66,7 @@ data = {"encodings": knownEncodings,
         "names":knownNames}
 
 f = open(args["output"], "wb")
-f.write(pickle.dumps(data))
+pickle.dump(data, f)
 f.close()
 print("[INFO] done encoding")
 

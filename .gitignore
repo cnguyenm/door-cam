@@ -107,9 +107,12 @@ venv.bak/
 # Pycharm
 .idea
 
-# images, videos
-img/
+# training file, because they may be heavy
+*.pickle
+
+# video
 video/
+*.mp4
 
 # important info
 config.py
