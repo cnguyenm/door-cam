@@ -24,26 +24,32 @@ ap.add_argument("-d", "--detection", type=str, default="hog",
 args = vars(ap.parse_args())
 
 # load known faces, and embeddings
-print("[INFO] loading encodings")
+print("[INFO] loading encodings") if __debug__ else 0
 data = pickle.loads(open(args["encodings"], "rb").read())
 
 # init video stream and pointer to output video file
 # VideoStream: wrapper class for cv2.Video
 # diff: has a separate thread running
-print("[INFO] start video stream")
+print("[INFO] start video stream") if __debug__ else 0
 video = VideoStream(src=0).start()
 writer = None
+frame_counter = 0
 time.sleep(2.0)
 
-# loop over frames from video file stream
+# Steps:
+# 1. Read each frame
+# 2. for every 10 frame, perform recognize face
+# 3. If display => display
+# 4. If write => write
 while True:
-    # grab the frame from threaded video stream
+    # ---- process each frame from video ------------------
+    t1 = time.time()
     frame = video.read()
 
     # convert frame BGR<=>RGB
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     rgb = imutils.resize(frame, width=750)
-    r = frame.shape[1] / float(rgb.shape[1])
+    r = frame.shape[1] / float(rgb.shape[1]) # r = proportion
 
     # detect faces
     boxes = face_recognition.face_locations(
@@ -97,7 +103,72 @@ while True:
         # name="unknown"or "name_of_max_votes"
         names.append(name)
 
-    
+    # ---- draw boxes around recognized faces ------------------
+    for ((y_t, x_r, y_b, x_l), name) in zip(boxes, names):
+        # rescale face from rgb => frame
+        # r = frame/rgb
+        # => frame = r * rgb
+        y_t = int(y_t * r)
+        y_b = int(y_b * r)
+        x_r = int(x_r * r)
+        x_l = int(x_l * r)
+
+        # draw box
+        cv2.rectangle(
+            frame, (x_l, y_t), (x_r, y_b),
+            (0, 255, 0), 2)
+
+        # find y_pos to draw name, choose top if
+        # there is space left
+        # else: put it in bottom
+        y = y_t - 15 if y_t > 30 else y_b + 15
+        cv2.putText(frame, name, (x_l, y), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.75,
+                    (0, 255, 0), 2)
+
+    # display fps
+    t2 = time.time()
+    fps = int(1 / (t2 - t1))
+    fps_dis = "fps: {}".format(fps)
+    cv2.putText(frame, fps_dis, (0, 20), cv2.FONT_HERSHEY_SIMPLEX,
+                0.75,
+                (0, 0, 255), 2)
+
+    # ---- if set, write each frame to file ------------------
+    # if video writer is None, and we are supposed to write
+    # output video to disk, init the writer
+    if writer is None and args["output"] is not None:
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        writer = cv2.VideoWriter(
+            args["output"], # name
+            fourcc,         # 4cc
+            20,             # fps
+            (frame.shape[1], frame.shape[0]))   # size, (width, height)
+
+    # if writer is not None, write frame to disk
+    if writer is not None:
+        writer.write(frame)
+
+    # ---- if set, display each frame -------------------
+    if args["display"] > 0:
+        cv2.imshow("frame", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        # if `q` key was pressed, break
+        if key == ord('q'):
+            break
+
+# Release everything if job is finished
+print("[INFO] Release everything.")
+cv2.destroyAllWindows()
+video.stop()
+if writer is not None:
+    writer.release()
+print("[INFO] Exit.")
+
+
+
+
 
 
 

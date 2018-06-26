@@ -1,3 +1,9 @@
+"""
+run with debug flag: -O
+python -O abc.py
+
+"""
+
 import face_recognition
 import argparse
 import pickle
