@@ -12,10 +12,12 @@ improve performance + accuracy
 """
 
 import cv2
-import dlib # python deep-learning lib
+import dlib  # python deep-learning lib
 import threading
 import time
 import face_recognition
+import argparse
+import pickle
 
 
 # desired output width, height
@@ -26,25 +28,99 @@ COLOR_BROWN = (0, 165, 255)
 COLOR_GREEN = (0, 255, 0)
 
 
+# construct argument parser
+ap = argparse.ArgumentParser()
+ap.add_argument("-e", "--encodings", required=True,
+                help="path to serialized db of facial encodings")
+
+ap.add_argument("-i", "--input", required=True,
+                help="path to input camera")
+
+# only use 'cnn' with GPU, CUDA
+ap.add_argument("-d", "--detection", type=str, default="hog",
+                help="detection model: `hog` or `cnn`")
+
+
+args = vars(ap.parse_args())
+
+# load known faces and embeddings
+print("[INFO] loading encodings")
+data = pickle.loads(open(args["encodings"], "rb").read())
+print("[INFO] load {} encodings from db".format(len(data["encodings"])))
+
+
+def check_int(s):
+    """
+    Helper function, check if s is int
+
+    :param s: <string>
+    :return: <boolean>
+    """
+    if s[0] in ('-', '+'):
+        return s[1:].isdigit()
+    return s.isdigit()
+
+
 # we are not really doing face recognition
-def recognize_person(face_names, fid):
+def recognize_person(face_names, fid, rgb_frame, bbox):
     """
     based on faceId, find person name
     add name to faceNames list
 
     :param face_names: string list
     :param fid: int
+    :param rgb_frame: <numpy.ndarray> base_image in RGB format
+    :param bbox: list of bboxes, in this case 1
     :return: None
     """
-    time.sleep(2)
-    face_names[fid] = "Person " + str(fid)
+
+    # if there is n_faces, output: n_encodings
+    # in this case, there is only 1 face,
+    # so take index 0
+    encoding = face_recognition.face_encodings(rgb_frame, bbox)[0]
+    name = "Unknown"
+
+    # attempt to match each face in input image to our
+    # known encodings
+    # tolerance: default=0.6
+    # return: list [T, F, T, ...]
+    matches = face_recognition.compare_faces(
+        data["encodings"], encoding
+    )
+
+    # check if we have a match
+    if True in matches:
+        # find indexes of al matched faces, then
+        # init a dict to count the total number of times
+        # each face was matched
+        matched_ids = [i for (i, b) in enumerate(matches) if b]
+        counts = {}
+
+        # loop over the matched indexes
+        # maintain a count for each recognized face
+        for i in matched_ids:
+            name = data["names"][i]
+            counts[name] = counts.get(name, 0) + 1
+
+        # determine the recognized face with
+        # largest number of votes
+        # (if tie, Python will select 1st entry)
+        name = max(counts, key=counts.get)
+
+    # assign name to face
+    face_names[fid] = name
 
 
 def detect_and_track_multiple_faces():
 
     # open cam device
     print("[INFO] Start capture video.")
-    cam = cv2.VideoCapture("video/learn_cat.mp4")
+    if check_int(args["input"]):
+        in_cam = int(args["input"])
+    else:
+        in_cam = args["input"]
+
+    cam = cv2.VideoCapture(in_cam)
 
     # create 2 opencv named windows
     cv2.namedWindow('base-image', cv2.WINDOW_AUTOSIZE)
@@ -65,7 +141,7 @@ def detect_and_track_multiple_faces():
     cur_face_id = 0
 
     # var holding correlation trackers, and name per faceId
-    face_trackers = {} # fid => tracker
+    face_trackers = {}  # fid => tracker
     face_names = {}
 
     try:
@@ -87,7 +163,6 @@ def detect_and_track_multiple_faces():
             # result img, the one we show user
             # result = original + rects
             result_img = base_img.copy()
-
 
             # STEPS:
             # * Update all trackers and remove the ones
@@ -128,7 +203,10 @@ def detect_and_track_multiple_faces():
                 rgb_frame = base_img[:, :, ::-1]
 
                 # detect faces
-                faces = face_recognition.face_locations(rgb_frame)
+                faces = face_recognition.face_locations(
+                    rgb_frame,
+                    model=args["detection"]
+                )
 
                 # loop over all faces
                 # top, right, bottom, left
@@ -156,7 +234,7 @@ def detect_and_track_multiple_faces():
                         t_w = int(track_position.width())
                         t_h = int(track_position.height())
 
-                        # cal centerpoint
+                        # cal center-point
                         t_x_bar = t_x + 0.5*t_w
                         t_y_bar = t_y + 0.5*t_h
 
@@ -195,15 +273,16 @@ def detect_and_track_multiple_faces():
                                             ))
                         face_trackers[cur_face_id] = tracker
 
-                        # start a new thread, to simulate face recognition
-                        # not yet implemented in this version
+                        # start a new thread, to recognize face
+                        bbox = [(yt, xr, yb, xl)]
                         t = threading.Thread(
                             target=recognize_person,
-                            args=(face_names, cur_face_id)
+                            args=(face_names, cur_face_id,
+                                  rgb_frame, bbox)
                         )
                         t.start()
 
-                        # increase curfaceId counter
+                        # increase cur_faceId counter
                         cur_face_id += 1
 
             # end 10 frame-if
@@ -226,9 +305,9 @@ def detect_and_track_multiple_faces():
                 # write name ...
                 if fid in face_names:
                     cv2.putText(result_img, face_names[fid],
-                                (t_x, t_y-10),
+                                (t_x, t_y-5),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                COLOR_GREEN, 1)
+                                COLOR_GREEN, 2)
 
             # create large result
             large_result = cv2.resize(result_img,

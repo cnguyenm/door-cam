@@ -1,0 +1,1 @@
+python encode_faces.py -i dataset -o faces.pickle

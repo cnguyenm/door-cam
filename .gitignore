@@ -114,6 +114,10 @@ venv.bak/
 video/
 *.mp4
 
+# training set
+dataset*
+img_test/
+
 # important info
 config.py
 

@@ -9,6 +9,8 @@ import argparse
 import pickle
 import cv2
 import matplotlib.pyplot as plt
+import time
+import imutils
 
 # construct argument parser
 ap = argparse.ArgumentParser()
@@ -27,9 +29,12 @@ args = vars(ap.parse_args())
 # load known faces and embeddings
 print("[INFO] loading encodings")
 data = pickle.loads(open(args["encodings"], "rb").read())
+print("[INFO] load {} encodings from db".format(len(data["encodings"])))
 
 # load input image
+t1 = time.time()
 image = cv2.imread(args["image"])
+image = imutils.resize(image, width=600)
 rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
@@ -37,11 +42,11 @@ rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 print("[INFO] detect face locations")
 boxes = face_recognition.face_locations(
     rgb,
-    model=args["detection"]
+    model=args["detection"]  # mostly 'hog', use `cnn` only if gpu
 )
 
 # if there is n_faces, output: n_encodings
-encodings = face_recognition.face_encodings(rgb, boxes)
+encodings = face_recognition.face_encodings(rgb, boxes, num_jitters=2)
 
 # initialize list of names for each face detected
 names = []
@@ -98,11 +103,14 @@ for ((y_t, x_r, y_b, x_l), name) in zip(boxes, names):
     # else: put it in bottom
     y = y_t - 15 if y_t > 30 else y_b + 15
     cv2.putText(image, name, (x_l, y), cv2.FONT_HERSHEY_SIMPLEX,
-                0.75,
+                1,
                 (0, 255, 0), 2)
 
 # show output image
+t2 = time.time()
+print("[INFO] Time: " + str(t2 - t1))
 print("[INFO] display result")
+print("[INFO] Names: " + str(names))
 output_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 plt.imshow(output_image)
 plt.show()

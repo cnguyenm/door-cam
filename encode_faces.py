@@ -5,6 +5,9 @@ import pickle
 import cv2
 import os
 
+# global var
+N_JITTERS = 5
+
 # construct arg parser and parse the arg
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--dataset", required=True,
@@ -18,7 +21,8 @@ args = vars(ap.parse_args())
 
 
 # grab the paths to the input images in our dataset
-print("[INFO] quantifying faces ...")
+print("[SETUP] n_jitters = {}".format(N_JITTERS))
+print("[INFO] loading image")
 imagePaths = list(paths.list_images(args["dataset"]))
 
 # init list of known encodings and known names
@@ -53,7 +57,7 @@ for (i, imagePath) in enumerate(imagePaths):
     )
 
     # compute facial embedding for the face
-    encodings = face_recognition.face_encodings(rgb, boxes)
+    encodings = face_recognition.face_encodings(rgb, boxes, num_jitters=N_JITTERS)
 
     # loop over encodings
     for encoding in encodings:
