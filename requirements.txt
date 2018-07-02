@@ -6,4 +6,4 @@ fbrecog
 imutils # convenience function for img processing
 matplotlib
 dlib
-
+peewee

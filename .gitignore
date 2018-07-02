@@ -121,3 +121,6 @@ img_test/
 # important info
 config.py
 
+# database
+*.db
+

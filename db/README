@@ -1,0 +1,22 @@
+**Useful commands in Python peewee**
+
+
+See all existing tables
+~~~~
+db = peewee.SqliteDatabase("wee.db")
+tables = db.get_tables()    # return list ['table1']
+~~~~
+
+
+See all columns of a table
+~~~~
+columns = db.get_columns("author")  # return list of column object
+~~~~
+
+
+Drop tables from db
+~~~~
+db.drop_tables(models, [,**options])
+~~~~
+
+
