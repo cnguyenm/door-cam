@@ -124,3 +124,5 @@ config.py
 # database
 *.db
 
+# visual code 
+.vscode/
