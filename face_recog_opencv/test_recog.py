@@ -1,6 +1,6 @@
 
 import cv2
-
+import pickle
 
 FACE_SIZE = 165
 subjects = ["dummy label", "Khoa", "C Tu", "Chau"]
@@ -79,7 +79,7 @@ def predict(original_img):
     # subjects should be generated when training data, or classifer
     # because not guarantee to detect face in every image
     # for the sake of testing, this is dummy data
-    name = s2[label]  
+    name = name_list[label]  
 
     # draw face rect
     draw_rect(img, rect, name + ": " + str(int(confidence)) + "%")
@@ -88,13 +88,20 @@ def predict(original_img):
     return img
 
 
+# load name list
+with open('name2.pickle', 'rb') as fp:
+    name_list = pickle.load(fp) 
+
 # create LBPH face recognizer
-face_recognizer = cv2.face.LBPHFaceRecognizer_create()
-#face_recognizer = cv2.face.EigenFaceRecognizer_create()
+#face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+face_recognizer = cv2.face.EigenFaceRecognizer_create()
 face_recognizer.read("db2.yml")
 
 # load
-test_img = cv2.imread("../img/test_chau2.jpg")
+test_img = cv2.imread("../img/test_xuan.png")
+if test_img is None:
+    print("Cannot read image")
+    exit(0)
 
 # resize
 h, w = test_img.shape[:2]

@@ -1,17 +1,19 @@
 
 import cv2
 import os
+import datetime
+import pickle
+import argparse
 import numpy as np
 from imutils import paths
 
 # global var
 debug = True 
-subjects = ["dummy label", "Khoa", "C Tu", "Chau"]
 FACE_SIZE = 165
 
 # create LBPH face recognizer
-#face_recognizer = cv2.face.EigenFaceRecognizer_create()
-face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+face_recognizer = cv2.face.EigenFaceRecognizer_create()
+#face_recognizer = cv2.face.LBPHFaceRecognizer_create()
 
 def debug(msg, end='\n'):
     """
@@ -101,20 +103,21 @@ def detect_face2(img):
 
     return face, faces[0]
 
-def prepare_training_data():
+def prepare_training_data(dataset_path):
     """
     prepare data for training
 
-    :return face_list, list<opencv images>, contain cropped images
-    :return id_list, list<int>, contains ids correspond to face
-    :return name_list, list<str>, list name, should be once for a name
+    :param dataset_path, [str], path to dataset
+    :return face_list, [list<opencv images>], contain cropped images
+    :return id_list, [list<int>], contains ids correspond to face
+    :return name_list, [list<str>], list name, should be once for a name
     because id will be the index of name_list
 
     """
 
     # get all image paths
     # list: [path1, path2, ...]
-    imagePaths = list(paths.list_images("../dataset_mini"))
+    imagePaths = list(paths.list_images(dataset_path))
 
     # var
     old_name = None 
@@ -161,52 +164,6 @@ def prepare_training_data():
 
     return face_list, id_list, name_list
 
-def predict(original_img):
-    """
-    given an opencv image, predict name
-    """
-
-    # copy, don't want to change original img
-    img = original_img.copy()
-
-    # detect face
-    face, rect = detect_face(img)
-
-    # predict face, get label or id
-    label, confidence = face_recognizer.predict(face)
-
-    # get name
-    # subjects should be generated when training data, or classifer
-    # because not guarantee to detect face in every image
-    # for the sake of testing, this is dummy data
-    name = subjects[label]  
-
-    # draw face rect
-    draw_rect(img, rect, name + ": " + str(int(confidence) + "%"))
-
-    # return img with rect
-    return img
-
-
-def main():
-    
-    # prepare data
-    debug("[INFO] prepare data...")
-    face_list, id_list, name_list = prepare_training_data()
-    
-    # print
-    debug("[INFO] Total faces: " + str(len(face_list)))
-    debug("[INFO] Total labels: " + str(len(id_list)))
-    debug("[DEBUG] " + str(id_list))    
-
-    # train
-    debug("[INFO] training data...")
-    #face_recognizer.train(face_list, np.array(id_list))
-
-    # # save data
-    # debug("[INFO] saving data in db2.yml")
-    # face_recognizer.save("db2.yml")
-
 def test1():
     img = cv2.imread("../img/test_chau2.jpg")
     face, rect = detect_face(img)
@@ -215,4 +172,49 @@ def test1():
     k = cv2.waitKey(0) 
     cv2.destroyAllWindows()
 
-main()
+
+def main():
+    
+    # parse arg
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-d", "--dataset", required=True,
+                help="path to dataset images")
+    args = vars(ap.parse_args())
+
+    # prepare data
+    debug("[INFO] prepare data...")
+    face_list, id_list, name_list = prepare_training_data(args["dataset"])
+    
+    # print
+    debug("[INFO] Total faces: " + str(len(face_list)))
+    debug("[INFO] Total labels: " + str(len(id_list)))    
+
+    # train
+    debug("[INFO] training data...")
+    face_recognizer.train(face_list, np.array(id_list))
+
+    # create a unique name to save file
+    # because I don't want to many cmd args
+    # now: type = str
+    now = datetime.datetime.now().strftime('%Y-%m-%d@%H:%M:%S') 
+
+    # save training data
+    db_path = "db{}.yml".format(now)
+    debug("[INFO] output: train file: " + db_path)
+    face_recognizer.save(db_path)
+
+    # save name list
+    name_path = "name{}.pickle".format(now)
+    debug("[INFO] output: name file: " + name_path)
+    file_handler = open(name_path, 'wb')
+    pickle.dump(name_list, file_handler)
+    file_handler.close()
+
+    # exit
+    debug("[INFO] You can change file_names later. :-| ")
+    debug("[INFO] Exit.")
+
+
+
+if __name__=='__main__':
+    main()
