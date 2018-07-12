@@ -123,6 +123,7 @@ config.py
 
 # database
 *.db
+*.yml
 
 # visual code 
 .vscode/

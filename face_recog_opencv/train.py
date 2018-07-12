@@ -11,9 +11,7 @@ from imutils import paths
 debug = True 
 FACE_SIZE = 165
 
-# create LBPH face recognizer
-face_recognizer = cv2.face.EigenFaceRecognizer_create()
-#face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+
 
 def debug(msg, end='\n'):
     """
@@ -190,7 +188,10 @@ def main():
     debug("[INFO] Total labels: " + str(len(id_list)))    
 
     # train
-    debug("[INFO] training data...")
+    # create LBPH face recognizer
+    debug("[INFO] training data: EigenFace")
+    face_recognizer = cv2.face.EigenFaceRecognizer_create()
+    #face_recognizer = cv2.face.LBPHFaceRecognizer_create()
     face_recognizer.train(face_list, np.array(id_list))
 
     # create a unique name to save file

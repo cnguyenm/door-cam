@@ -17,6 +17,7 @@ columns = db.get_columns("author")  # return list of column object
 Drop tables from db
 ~~~~
 db.drop_tables(models, [,**options])
+db.execute_sql('drop table person')
 ~~~~
 
 

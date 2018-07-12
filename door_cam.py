@@ -302,6 +302,7 @@ def detect_and_track_multiple_faces():
                               (t_x + t_w, t_y + t_h),
                               rect_color, 2)
 
+                # if that fid exist
                 # write name ...
                 if fid in face_names:
                     cv2.putText(result_img, face_names[fid],
