@@ -105,11 +105,16 @@ def prepare_training_data():
     """
     prepare data for training
 
+    :return face_list, list<opencv images>, contain cropped images
+    :return id_list, list<int>, contains ids correspond to face
+    :return name_list, list<str>, list name, should be once for a name
+    because id will be the index of name_list
+
     """
 
     # get all image paths
     # list: [path1, path2, ...]
-    imagePaths = list(paths.list_images("../dataset_cmc"))
+    imagePaths = list(paths.list_images("../dataset_mini"))
 
     # var
     old_name = None 
@@ -117,6 +122,7 @@ def prepare_training_data():
     id = 0
     id_list = []
     face_list = []
+    name_list = [""]    # first name is dummy
 
     # loop over image paths
     # i =  1=> len(imagePaths)-1
@@ -129,26 +135,31 @@ def prepare_training_data():
         # output: chau
         name = imagePath.split(os.path.sep)[-2]
 
-        # if change person, update name
-        # label
-        if old_name != name:
-            id += 1
-            old_name = name
-        
         # detect face
         debug("[INFO] detect face: {}/{}: {}".format(i+1, len(imagePaths), name), end=" ")
         image = cv2.imread(imagePath)
         gray_face, rect = detect_face2(image)
 
-        # add to list
-        if gray_face is not None:
-            debug("=> OK")
-            id_list.append(id)
-            face_list.append(gray_face)
-        else:
+        # if face not found
+        if gray_face is None:
             debug("=> face not found")
+            continue
 
-    return face_list, id_list
+        # if face found
+        # if change person, update name
+        # update label
+        if old_name != name:
+            id += 1
+            old_name = name
+            name_list.append(name)
+        
+        # add to list
+        debug("=> OK")
+        id_list.append(id)
+        face_list.append(gray_face)
+        
+
+    return face_list, id_list, name_list
 
 def predict(original_img):
     """
@@ -181,19 +192,20 @@ def main():
     
     # prepare data
     debug("[INFO] prepare data...")
-    face_list, id_list = prepare_training_data()
+    face_list, id_list, name_list = prepare_training_data()
     
     # print
     debug("[INFO] Total faces: " + str(len(face_list)))
-    debug("[INFO] Total labesl: " + str(len(id_list)))
+    debug("[INFO] Total labels: " + str(len(id_list)))
+    debug("[DEBUG] " + str(id_list))    
 
     # train
     debug("[INFO] training data...")
-    face_recognizer.train(face_list, np.array(id_list))
+    #face_recognizer.train(face_list, np.array(id_list))
 
-    # save data
-    debug("[INFO] saving data in db2.yml")
-    face_recognizer.save("db2.yml")
+    # # save data
+    # debug("[INFO] saving data in db2.yml")
+    # face_recognizer.save("db2.yml")
 
 def test1():
     img = cv2.imread("../img/test_chau2.jpg")
