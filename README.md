@@ -11,7 +11,7 @@ Right now, it can
 
 For now, it works fine, with good performance (about 30fps), though the accuracy is not there.
 It would be better with more training images for EigenFaceRecognizer
-![Lumina](/img/run_doorcam2.png)
+![Demo](/img/demo_doorcam2.png)
 
 
 
